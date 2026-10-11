@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+const server=readFileSync(new URL('../server.js',import.meta.url),'utf8');
+const auth=readFileSync(new URL('../src/auth.js',import.meta.url),'utf8');
+const gitignore=readFileSync(new URL('../.gitignore',import.meta.url),'utf8');
+test('author books filtered by token user id',()=>assert.match(server,/Book\.find\(\{authorId:req\.user\.id\}\)/));
+test('admin routes require admin role',()=>assert.match(server,/requireRole\('admin'\)/));
+test('ticket creation requires author role',()=>assert.match(server,/post\('\/api\/tickets',authenticate,requireRole\('author'\)/));
+test('JWT is verified server-side',()=>assert.match(auth,/jwt\.verify\(/));
+test('env file ignored',()=>assert.match(gitignore,/^\.env\s*$/m));
