@@ -1,0 +1,14 @@
+import 'dotenv/config';
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+import {User,Book} from '../src/models.js';
+if(!process.env.MONGODB_URI)throw new Error('Set MONGODB_URI locally first');
+if(!process.env.SEED_ADMIN_PASSWORD||!process.env.SEED_AUTHOR_PASSWORD)throw new Error('Set SEED_ADMIN_PASSWORD and SEED_AUTHOR_PASSWORD');
+await mongoose.connect(process.env.MONGODB_URI);
+const adminEmail=process.env.SEED_ADMIN_EMAIL||'admin@bookleaf.test';
+const authorEmail=process.env.SEED_AUTHOR_EMAIL||'priya.sharma@email.com';
+const admin=await User.findOneAndUpdate({email:adminEmail},{name:'BookLeaf Admin',email:adminEmail,role:'admin',passwordHash:await bcrypt.hash(process.env.SEED_ADMIN_PASSWORD,12)},{upsert:true,new:true});
+const author=await User.findOneAndUpdate({email:authorEmail},{name:'Priya Sharma',email:authorEmail,role:'author',passwordHash:await bcrypt.hash(process.env.SEED_AUTHOR_PASSWORD,12)},{upsert:true,new:true});
+await Book.findOneAndUpdate({authorId:author.id,isbn:'9780000000001'},{authorId:author.id,title:'Whispers of the Ganges',isbn:'9780000000001',genre:'Fiction',status:'Published & Live',mrp:399,copiesSold:342,royaltyEarned:11970,royaltyPaid:8400,royaltyPending:3570},{upsert:true});
+console.log('Demo users and one example book seeded. Replace example ISBN with verified sample data before submission.');
+await mongoose.disconnect();
