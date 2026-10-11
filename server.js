@@ -3,7 +3,7 @@ import express from 'express';import cors from 'cors';import mongoose from 'mong
 import {User,Book,Ticket} from './src/models.js';import {authenticate,requireRole} from './src/auth.js';import {suggest} from './src/ai.js';
 if(!process.env.MONGODB_URI||!process.env.JWT_SECRET)throw new Error('MONGODB_URI and JWT_SECRET are required');
 await mongoose.connect(process.env.MONGODB_URI);
-const app=express();app.use(cors({origin:process.env.CORS_ORIGIN||false}));app.use(express.json({limit:'100kb'}));
+const app=express();app.use(cors({origin:process.env.CORS_ORIGIN||false}));app.use(express.json({limit:'100kb'}));app.use(express.static('public'));
 const asyncRoute=fn=>(req,res,next)=>Promise.resolve(fn(req,res,next)).catch(next);
 app.get('/api/health',(_req,res)=>res.json({ok:true}));
 app.post('/api/auth/login',asyncRoute(async(req,res)=>{const parsed=z.object({email:z.string().email(),password:z.string().min(1)}).safeParse(req.body);if(!parsed.success)return res.status(400).json({error:'Invalid login input'});const user=await User.findOne({email:parsed.data.email.toLowerCase()});if(!user||!(await bcrypt.compare(parsed.data.password,user.passwordHash)))return res.status(401).json({error:'Invalid credentials'});res.json({token:jwt.sign({id:String(user.id),role:user.role},process.env.JWT_SECRET,{expiresIn:'7d'}),role:user.role,name:user.name});}));
