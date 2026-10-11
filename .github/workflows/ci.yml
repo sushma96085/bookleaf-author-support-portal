@@ -1,0 +1,40 @@
+name: BookLeaf CI and MongoDB E2E
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm install
+      - run: npm test
+  mongodb-e2e:
+    if: ${{ github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    env:
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      SEED_ADMIN_PASSWORD: ${{ secrets.SEED_ADMIN_PASSWORD }}
+      SEED_AUTHOR_PASSWORD: ${{ secrets.SEED_AUTHOR_PASSWORD }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm install
+      - name: Check secrets are configured
+        run: |
+          test -n "$MONGODB_URI" || (echo "Missing MONGODB_URI secret" && exit 1)
+          test -n "$JWT_SECRET" || (echo "Missing JWT_SECRET secret" && exit 1)
+          test -n "$SEED_ADMIN_PASSWORD" || (echo "Missing SEED_ADMIN_PASSWORD secret" && exit 1)
+          test -n "$SEED_AUTHOR_PASSWORD" || (echo "Missing SEED_AUTHOR_PASSWORD secret" && exit 1)
+      - run: npm run seed
+      - run: node tests/live-e2e.js
